@@ -7,7 +7,7 @@ import './Ownable.sol';
     
   string public name ='';
    string public symbol = '';
-   uint8 public  decimal =0;
+   uint8 public  decimals =0;
    
      
   event Mint(address indexed to, uint256 amount);
@@ -27,7 +27,7 @@ import './Ownable.sol';
    * @param _amount The amount of tokens to mint.
    * @return A boolean that indicates if the operation was successful.
    */
-  function mint(address _to, uint256 _amount) onlyOwner canMint returns (bool) {
+  function mint(address _to, uint256 _amount) canMint returns (bool) {
     totalSupply = totalSupply.add(_amount);
     balances[_to] = balances[_to].add(_amount);
     Mint(_to, _amount);
@@ -50,7 +50,7 @@ function Ammbr( string _name, string _symbol, uint8 _decimals){
 
    name = _name;
    symbol = _symbol;
-   decimal = _decimals;    
+   decimals = _decimals;    
   
 }
 
