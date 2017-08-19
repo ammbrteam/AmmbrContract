@@ -5,7 +5,7 @@ import './Ownable.sol';
 
   contract  Ammbr is StandardToken, Ownable {
     
-  string public name ='';
+   string public name ='';
    string public symbol = '';
    uint8 public  decimals =0;
    
