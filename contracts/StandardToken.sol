@@ -1,7 +1,3 @@
-pragma solidity ^0.4.11;
-
-import './ERC20.sol';
-import './SafeMath.sol';
 
 contract StandardToken is ERC20 {
   // include Safe math libary
@@ -21,6 +17,10 @@ contract StandardToken is ERC20 {
   * @param _value The amount to be transferred.
   */
   function transfer(address _to, uint256 _value) returns (bool) {
+
+    assert(0 < _value);
+    assert(balances[msg.sender] >= _value);
+
     balances[msg.sender] = balances[msg.sender].sub(_value);
     balances[_to] = balances[_to].add(_value);
     Transfer(msg.sender, _to, _value);
@@ -45,7 +45,11 @@ contract StandardToken is ERC20 {
    */
   function transferFrom(address _from, address _to, uint256 _value) returns (bool) {
     var _allowance = allowed[_from][msg.sender];
-
+    
+    assert (balances[_from] >= _value);
+    assert (_allowance >= _value );
+    assert ( _value > 0 );
+    //assert ( balances[_to] + _value > balances[_to]);
     // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
     // require (_value <= _allowance);
 

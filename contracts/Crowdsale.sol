@@ -16,8 +16,7 @@ contract Crowdsale is Ownable{
     uint256[] weekBlock;
   // address where funds are collected
   address  wallet;
- // address  deployerAdd;
-
+ 
   // how many token units a buyer gets per wei
   uint256 public rate;
 
@@ -44,12 +43,12 @@ contract Crowdsale is Ownable{
         
     }
 
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock, address contract_add, address _wallet,uint256 tokenPerEther) {
+  function Crowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,uint256 tokenPerEther) {
  
     require(_wallet != 0x0);
-    require(contract_add != 0x0);
+    require(ammbrAddress != 0x0);
 
-    token =  AbstractAmmbr(contract_add);
+    token =  AbstractAmmbr(ammbrAddress);
   
     
    
