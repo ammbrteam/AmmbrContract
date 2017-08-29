@@ -98,11 +98,11 @@ contract Crowdsale is Ownable{
      // minimum 0.0000000000000100 ether 
      tokens = tokens.div(100);
     weiRaised = weiRaised+(weiAmount);
-
+    forwardFunds();
     token.mint(beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
 
-    forwardFunds();
+    
   }
 
   // send ether to the fund collection wallet
@@ -125,7 +125,7 @@ function bonus()internal returns(uint256){
   function validPurchase() internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPeriod = current >= startBlock && current <= endBlock;
-    bool nonZeroPurchase = true;// msg.value != 0;
+    bool nonZeroPurchase =  msg.value != 0 && msg.value > 100 ;
     return withinPeriod && nonZeroPurchase;
   }
 
