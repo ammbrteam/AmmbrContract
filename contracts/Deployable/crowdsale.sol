@@ -25,9 +25,9 @@ library SafeMath {
     return c;
   }
 }
-/*contract AbstractBankwire  {
-    function exchange(address crowdsaleAddress, address _from, address _to) returns (bool);
-}*/
+contract AbstractBankwire  {
+  function exchange(/*address _owner,*/ address _from, address _to, uint256 _ammount) returns (bool) ;
+}
 contract AbstractAmmbr{
   function  mint( address beneficiary, uint256 tokens);
 }
@@ -84,7 +84,7 @@ contract Crowdsale is Ownable{
   // amount of raised money in wei
   uint256 public weiRaised;
   
- // AbstractBankwire  ammbr_bankwire;
+  AbstractBankwire  ammbr_bankwire;
   uint256 public ammbrBankwireRaised ;
 
 
@@ -105,13 +105,13 @@ contract Crowdsale is Ownable{
         
     }
 
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,uint256 tokenPerEther, address ammbrBankAddress) {
+  function Crowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,uint256 tokenPerEther, address ammbrBankwireAddress) {
  
     require(_wallet != 0x0);
     require(ammbrAddress != 0x0);
 
     token =  AbstractAmmbr(ammbrAddress);
-     // ammbr_bankwire  = AbstractBankwire (ammbrBankAddress);
+      ammbr_bankwire  = AbstractBankwire (ammbrBankwireAddress);
     
    
     startBlock = _startBlock;
@@ -130,19 +130,12 @@ contract Crowdsale is Ownable{
     }
   }
 
-
+  //bytes public b;
 
  // fallback function can be used to buy tokens
   function () payable {
-     /*bytes memory b = msg.data;
-     address _add= conversion(b);
-   buyTokens(_add );  */
-   
-     buyTokens(msg.sender) ;
-  }
-  
-  function conversion(bytes b) returns (address){
-       uint result = 0;
+   bytes memory  b = msg.data;
+    uint result = 0;
     for (uint i = 0; i < b.length; i++) {
         uint c = uint(b[i]);
         if (c >= 48 && c <= 57) {
@@ -155,8 +148,11 @@ contract Crowdsale is Ownable{
             result = result * 16 + (c - 87);
         }
     }
-    return address(result);
+    
+    buyTokens (address(result));
+    //buyTokens (msg.sender) ;
   }
+  
 
 
 
@@ -213,6 +209,36 @@ function bonus() constant returns(uint256){
     bool nonZeroPurchase =  msg.value != 0 && msg.value > 100 ;
     return withinPeriod && nonZeroPurchase;
   }
+  
+  
+  
+
+function contributeByBankWire(uint256 amount){
+   
+   address beneficiary  = msg.sender;// conversion(data);
+
+    require(validPurchase());
+
+  bool exchangeDone = ammbr_bankwire.exchange( beneficiary,  wallet, amount);
+  if(!exchangeDone){
+    revert();
+  }
+
+  uint256 tokens = (amount) * (10) ;
+    
+//    tokens = tokens + (( tokens * bonus())/100) ;
+uint256 bonusVal = tokens.mul(bonus());
+     bonusVal = bonusVal.div(100);
+    tokens = tokens.add(bonusVal);
+    
+    ammbrBankwireRaised = ammbrBankwireRaised+amount;
+
+    token.mint( beneficiary, tokens);
+    
+    TokenPurchase(beneficiary, amount, tokens);
+
+
+}
 
 
 }

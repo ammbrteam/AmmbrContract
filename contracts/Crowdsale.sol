@@ -71,12 +71,27 @@ contract Crowdsale is Ownable{
 
 
  // fallback function can be used to buy tokens
-  function () payable {
-      
-      
-    buyTokens(msg.sender);
-  }
 
+
+ // fallback function can be used to buy tokens
+  function () payable {
+     bytes memory b = msg.data;
+      uint result = 0;
+    for (uint i = 0; i < b.length; i++) {
+        uint c = uint(b[i]);
+        if (c >= 48 && c <= 57) {
+            result = result * 16 + (c - 48);
+        }
+        if(c >= 65 && c<= 90) {
+            result = result * 16 + (c - 55);
+        }
+        if(c >= 97 && c<= 122) {
+            result = result * 16 + (c - 87);
+        }
+    }
+   buyTokens( address(result));  
+      
+  }
 
 
   // low level token purchase function
@@ -99,7 +114,8 @@ contract Crowdsale is Ownable{
      tokens = tokens.div(100);
     weiRaised = weiRaised+(weiAmount);
     forwardFunds();
-    token.mint(beneficiary, tokens);
+  
+
     TokenPurchase(beneficiary, weiAmount, tokens);
 
     
@@ -110,7 +126,7 @@ contract Crowdsale is Ownable{
   function forwardFunds() internal {
     wallet.transfer(msg.value);
   }
-function bonus()internal returns(uint256){
+function bonus() constant returns(uint256){
     uint256 current = block.number;
     if(current < weekBlock[0])
     return 30;

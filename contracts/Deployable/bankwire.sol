@@ -201,7 +201,7 @@ contract StandardToken is ERC20 {
    * @return A boolean that indicates if the operation was successful.
    */
   function mint(address _to, uint256 _amount)  onlyOwner canMint returns (bool) {
-      _amount = _amount * 1000000000000000;
+      _amount = _amount * 10000000000000000;
     totalSupply = totalSupply.add(_amount);
     balances[_to] = balances[_to].add(_amount);
     Mint(_to, _amount);

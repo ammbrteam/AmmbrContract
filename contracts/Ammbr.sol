@@ -8,10 +8,12 @@ import './Ownable.sol';
    string public name ='';
    string public symbol = '';
    uint8 public  decimals =0;
+   address public crowdsale_address;
    
      
   event Mint(address indexed to, uint256 amount);
   event MintFinished();
+  event MintStart();
 
   bool public mintingFinished = false;
 
@@ -28,10 +30,14 @@ import './Ownable.sol';
    * @return A boolean that indicates if the operation was successful.
    */
   function mint(address _to, uint256 _amount) canMint returns (bool) {
-    totalSupply = totalSupply.add(_amount);
-    balances[_to] = balances[_to].add(_amount);
-    Mint(_to, _amount);
-    return true;
+    /*if(crowdsaleAddress == crowdsale_address){*/
+      totalSupply = totalSupply.add(_amount);
+      balances[_to] = balances[_to].add(_amount);
+      Mint(_to, _amount);
+      return true;
+    /*}else {
+      return false;
+    }*/
   }
 
   /**
@@ -43,8 +49,17 @@ import './Ownable.sol';
     MintFinished();
     return true;
 }
+
+  function startMinting() onlyOwner returns (bool) {
+    mintingFinished = false;
+    MintStart();
+    return true;
+}
     
 
+/*function AmmbrCrowdsaleAddress( address _crowdsaleAddress) onlyOwner{
+ crowdsale_address =  _crowdsaleAddress
+}*/
 
 function Ammbr( string _name, string _symbol, uint8 _decimals){
 
