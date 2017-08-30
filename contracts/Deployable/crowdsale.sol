@@ -210,25 +210,32 @@ function bonus() constant returns(uint256){
     return withinPeriod && nonZeroPurchase;
   }
   
+    function validBankwirePurchase(uint256 amount) internal constant returns (bool) {
+    uint256 current = block.number;
+    bool withinPeriod = current >= startBlock && current <= endBlock;
+    bool nonZeroPurchase =  amount > 0  ;
+    return withinPeriod && nonZeroPurchase;
+  }
   
   
 
-function contributeByBankWire(uint256 amount){
+function contributeByBankWire(uint256 amount) returns(bool){
    
+ 
+    require(validBankwirePurchase(amount));
+    amount = amount * 10000000000000000;
    address beneficiary  = msg.sender;// conversion(data);
 
-    require(validPurchase());
+     bool exchangeDone = ammbr_bankwire.exchange( beneficiary,  wallet, amount);
+    if(!exchangeDone){
+        revert();
+      }
 
-  bool exchangeDone = ammbr_bankwire.exchange( beneficiary,  wallet, amount);
-  if(!exchangeDone){
-    revert();
-  }
-
-  uint256 tokens = (amount) * (10) ;
+    uint256 tokens = (amount) * (10) ;
     
-//    tokens = tokens + (( tokens * bonus())/100) ;
-uint256 bonusVal = tokens.mul(bonus());
-     bonusVal = bonusVal.div(100);
+
+    uint256 bonusVal = tokens.mul(bonus());
+    bonusVal = bonusVal.div(100);
     tokens = tokens.add(bonusVal);
     
     ammbrBankwireRaised = ammbrBankwireRaised+amount;
@@ -236,7 +243,7 @@ uint256 bonusVal = tokens.mul(bonus());
     token.mint( beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
-
+return true;
 
 }
 
