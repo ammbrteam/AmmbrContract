@@ -200,7 +200,7 @@ contract StandardToken is ERC20 {
    * @param _amount The amount of tokens to mint.
    * @return A boolean that indicates if the operation was successful.
    */
-  function mint(address _to, uint256 _amount)  onlyOwner canMint returns (bool) {
+  function allocateBankWire(address _to, uint256 _amount)  onlyOwner canMint returns (bool) {
       _amount = _amount * 10000000000000000;
     totalSupply = totalSupply.add(_amount);
     balances[_to] = balances[_to].add(_amount);
@@ -212,13 +212,13 @@ contract StandardToken is ERC20 {
    * @dev Function to stop minting new tokens.
    * @return True if the operation was successful.
    */
-  function finishMinting() onlyOwner returns (bool) {
+  function stopAllocation() onlyOwner returns (bool) {
     mintingFinished = true;
     MintFinished();
     return true;
 }
     
-  function startMinting() onlyOwner returns (bool) {
+  function startAllocation() onlyOwner returns (bool) {
     mintingFinished = false;
     MintStart();
     return true;

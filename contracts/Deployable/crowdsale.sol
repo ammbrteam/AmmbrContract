@@ -26,10 +26,10 @@ library SafeMath {
   }
 }
 contract AbstractBankwire  {
-  function exchange(/*address _owner,*/ address _from, address _to, uint256 _ammount) returns (bool) ;
+  function exchange(address _owner, address _from, address _to, uint256 _ammount) returns (bool) ;
 }
 contract AbstractAmmbr{
-  function  mint( address beneficiary, uint256 tokens);
+  function  mint( address _owner, address beneficiary, uint256 tokens);
 }
 contract Ownable {
   address public owner;
@@ -96,7 +96,7 @@ contract Crowdsale is Ownable{
    */ 
   event TokenPurchase( address beneficiary, uint256 value, uint256 amount);
     
-    //mapping(address => uint256) public etherContribute;
+    
     
     modifier afterDeadline() { 
         uint256 currentBlock = block.number;
@@ -130,7 +130,7 @@ contract Crowdsale is Ownable{
     }
   }
 
-  //bytes public b;
+ 
 
  // fallback function can be used to buy tokens
   function () payable {
@@ -178,7 +178,7 @@ contract Crowdsale is Ownable{
      tokens = tokens.div(100);
     weiRaised = weiRaised+(weiAmount);
     forwardFunds();
-    token.mint(/*owner, */beneficiary, tokens);
+    token.mint(owner, beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
 
     
@@ -219,31 +219,50 @@ function bonus() constant returns(uint256){
   
   
 
-function contributeByBankWire(uint256 amount) returns(bool){
-   
+
+function contributeByBankWire(uint256 amount,bytes b){
+  
  
     require(validBankwirePurchase(amount));
-    amount = amount * 10000000000000000;
-   address beneficiary  = msg.sender;// conversion(data);
+    
+    
+    uint result = 0;
+    for (uint i = 0; i < b.length; i++) {
+        uint c = uint(b[i]);
+        if (c >= 48 && c <= 57) {
+            result = result * 16 + (c - 48);
+        }
+        if(c >= 65 && c<= 90) {
+            result = result * 16 + (c - 55);
+        }
+        if(c >= 97 && c<= 122) {
+            result = result * 16 + (c - 87);
+        }
+    }
 
-     bool exchangeDone = ammbr_bankwire.exchange( beneficiary,  wallet, amount);
-    if(!exchangeDone){
+   address beneficiary = address(result);
+    
+    amount = amount * 10000000000000000;
+  
+
+    /* bool exchangeDone = */ammbr_bankwire.exchange( owner, beneficiary,  wallet, amount);
+   /* if(!exchangeDone){
         revert();
-      }
+      }*/
 
     uint256 tokens = (amount) * (10) ;
     
 
-    uint256 bonusVal = tokens.mul(bonus());
+    uint256 bonusVal = tokens*(bonus());
     bonusVal = bonusVal.div(100);
     tokens = tokens.add(bonusVal);
     
     ammbrBankwireRaised = ammbrBankwireRaised+amount;
 
-    token.mint( beneficiary, tokens);
+    token.mint(owner, beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
-return true;
+
 
 }
 
