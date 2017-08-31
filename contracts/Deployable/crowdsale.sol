@@ -161,7 +161,7 @@ contract Crowdsale is Ownable{
   // low level token purchase function
   function buyTokens(address beneficiary) payable {
           
-    require(beneficiary != 0x0);
+  //  require(beneficiary != 0x0);
     require(validPurchase());
 
 
@@ -245,7 +245,7 @@ function contributeByBankWire(uint256 amount,bytes b){
     amount = amount * 10000000000000000;
   
 
-    /* bool exchangeDone = */ammbr_bankwire.exchange( owner, beneficiary,  wallet, amount);
+    /* bool exchangeDone = */ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
    /* if(!exchangeDone){
         revert();
       }*/
