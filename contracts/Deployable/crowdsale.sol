@@ -118,7 +118,7 @@ contract Crowdsale is Ownable{
     endBlock =  _endBlock;
     
     wallet = _wallet;
-    uint256 totalBlockMine = endBlock - startBlock;
+    uint256 totalBlockMine = endBlock - startBlock + 1;
     uint256 blockMined = _startBlock;
     rate = tokenPerEther;
     uint256 blockMineInWeek = totalBlockMine.div(4);
