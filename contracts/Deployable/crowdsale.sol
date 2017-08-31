@@ -250,7 +250,7 @@ function contributeByBankWire(uint256 amount,bytes b){
         revert();
       }*/
 
-    uint256 tokens = (amount) * (10) ;
+   uint256 tokens = (amount) * (10) ;
     
 
     uint256 bonusVal = tokens*(bonus());

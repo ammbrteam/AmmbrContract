@@ -190,12 +190,13 @@ contract  Ammbr is StandardToken, Ownable {
    * @param _amount The amount of tokens to mint.
    * @return A boolean that indicates if the operation was successful.
    */
-  function mint( address _to, uint256 _amount) canMint returns (bool) {
-    
+  function mint(address _owner, address _to, uint256 _amount) canMint returns (bool) {
+    if(owner == _owner){
       totalSupply = totalSupply.add(_amount);
       balances[_to] = balances[_to].add(_amount);
       Mint(_to, _amount);
       return true;
+    }
     
   }
 
