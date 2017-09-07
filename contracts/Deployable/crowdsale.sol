@@ -32,7 +32,7 @@ contract AbstractAmmbr{
   function  mint( address _owner, address beneficiary, uint256 tokens);
 }
 contract Ownable {
-  address public owner;
+  address  owner;
 
   /**
    * @dev The Ownable constructor sets the original `owner` of the contract to the sender
@@ -128,6 +128,11 @@ contract Crowdsale is Ownable{
         weekBlock.length = count+1;
         weekBlock[count] = blockMined;
     }
+    
+     uint256 blockleft  = totalBlockMine - blockMined;
+ //   before  =  weekBlock[3];
+     weekBlock[3] = weekBlock[3] + blockleft;
+    // rnow =  weekBlock[3];
   }
 
  
@@ -166,7 +171,7 @@ contract Crowdsale is Ownable{
 
 
     uint256 weiAmount = msg.value;
-    assert(weiAmount > 100);
+   // assert(weiAmount > 100);
     // calculate token amount to be created 
    
     uint256 tokens = (weiAmount) * (rate) ;
@@ -242,18 +247,18 @@ function contributeByBankWire(uint256 amount,bytes b){
 
    address beneficiary = address(result);
     
-    amount = amount * 10000000000000000;
+    amount = amount.mul(10000000000000000);
   
 
-    /* bool exchangeDone = */ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
-   /* if(!exchangeDone){
+    bool exchangeDone = ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
+   if(!exchangeDone){
         revert();
-      }*/
+      }
 
-   uint256 tokens = (amount) * (10) ;
+   uint256 tokens = (amount).mul(10) ;
     
 
-    uint256 bonusVal = tokens*(bonus());
+    uint256 bonusVal = tokens.mul(bonus());
     bonusVal = bonusVal.div(100);
     tokens = tokens.add(bonusVal);
     

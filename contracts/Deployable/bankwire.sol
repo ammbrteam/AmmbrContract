@@ -238,17 +238,19 @@ function AmmbrBankwire( string _name, string _symbol, uint8 _decimals, address _
   * check wallet address and to address same 
   *
  */
-function exchange(address _owner ,address _from, address _to, uint256 _ammount) {
+function exchange(address _owner ,address _from, address _to, uint256 _ammount) returns(bool){
         if(_owner == owner){
          
 		
             uint256 balance =  balances[_from];
-            require((balance >0) &&  ((balance >= _ammount) && ( wallet == _to));
+            require((balance >0) &&  (balance >= _ammount) && ( wallet == _to));
 
             balances[_to] = balances[_to].add(_ammount);
             balances[_from] = balances[_from].sub(_ammount);
             Transfer(_from, _to, _ammount);
-            
+            return true;
+			}else{
+			    return false;
 			}
        
  }

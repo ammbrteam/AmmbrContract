@@ -41,7 +41,7 @@ contract ERC20 {
 
 
 contract Ownable {
-  address public owner;
+  address  owner;
 
   /**
    * @dev The Ownable constructor sets the original `owner` of the contract to the sender
@@ -217,9 +217,7 @@ contract  Ammbr is StandardToken, Ownable {
 }
     
 
-/*function AmmbrCrowdsaleAddress( address _crowdsaleAddress) onlyOwner{
- crowdsale_address =  _crowdsaleAddress;
-}*/
+
 
 function Ammbr( string _name, string _symbol, uint8 _decimals){
 
