@@ -63,11 +63,11 @@ contract Ownable {
 
 }
 
-contract Crowdsale is Ownable{
-  using SafeMath for uint256;
+contract PrivateCrowdsale is Ownable{
+    using SafeMath for uint256;
  
-  // The token being sold
-  AbstractAmmbr public token;
+    // The token being sold
+     AbstractAmmbr public token;
    
   
 
@@ -75,17 +75,25 @@ contract Crowdsale is Ownable{
   uint256 public startBlock;
   uint256 public endBlock;
     uint256[] weekBlock;
+    
   // address where funds are collected
   address  wallet;
- 
-  // how many token units a buyer gets per wei
-  uint256 public rate;
-
-  // amount of raised money in wei
-  uint256 public weiRaised;
   
+    uint256 public etherRaiseGoal;
+  // Set base rate based on ether for bankwire, bitcoin and bitcoin cash
+
+   uint256 public bankwirePerEther;
+   uint256 public etherPerBitcoin;
+   uint256 public etherPerBitcoinCash;
+
   AbstractBankwire  ammbr_bankwire;
+    // amount of raised money in wei, bankwire, bitcoin and bitcoin cash
+  uint256 public weiRaised;
   uint256 public ammbrBankwireRaised ;
+  uint256 public bitcoinRaised;
+  uint256 public bitcoinCashRaised;
+  
+   bool isEtherCapReached;
 
 
   /**
@@ -104,23 +112,32 @@ contract Crowdsale is Ownable{
          _; 
         
     }
-
-  function Crowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,uint256 tokenPerEther, address ammbrBankwireAddress) {
+function setEtherRaiseGoal(uint256 amount) onlyOwner{
+    etherRaiseGoal = amount.mul(1000000000000000000);
+    isEtherCapReached = false;
+}
+  function PrivateCrowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,/*uint256 tokenPerEther,*/ address ammbrBankwireAddress, uint256 _bankwirePerEther, uint256 _etherPerBitcoinCash, uint256 _etherPerBitcoin) {
  
     require(_wallet != 0x0);
     require(ammbrAddress != 0x0);
 
     token =  AbstractAmmbr(ammbrAddress);
-      ammbr_bankwire  = AbstractBankwire (ammbrBankwireAddress);
     
-   
+    ammbr_bankwire  = AbstractBankwire (ammbrBankwireAddress);
+       
     startBlock = _startBlock;
     endBlock =  _endBlock;
     
     wallet = _wallet;
+    
+    bankwirePerEther = _bankwirePerEther;
+    etherPerBitcoinCash = _etherPerBitcoinCash;
+    etherPerBitcoin = _etherPerBitcoin;
+
     uint256 totalBlockMine = endBlock - startBlock + 1;
+    
     uint256 blockMined = _startBlock;
-    rate = tokenPerEther;
+  //  rate = tokenPerEther;
     uint256 blockMineInWeek = totalBlockMine.div(4);
     
     for(uint count =0 ; count < 4 ; count++){
@@ -130,9 +147,9 @@ contract Crowdsale is Ownable{
     }
     
      uint256 blockleft  = totalBlockMine - blockMined;
- //   before  =  weekBlock[3];
+ 
      weekBlock[3] = weekBlock[3] + blockleft;
-    // rnow =  weekBlock[3];
+ 
   }
 
  
@@ -140,21 +157,8 @@ contract Crowdsale is Ownable{
  // fallback function can be used to buy tokens
   function () payable {
    bytes memory  b = msg.data;
-    uint result = 0;
-    for (uint i = 0; i < b.length; i++) {
-        uint c = uint(b[i]);
-        if (c >= 48 && c <= 57) {
-            result = result * 16 + (c - 48);
-        }
-        if(c >= 65 && c<= 90) {
-            result = result * 16 + (c - 55);
-        }
-        if(c >= 97 && c<= 122) {
-            result = result * 16 + (c - 87);
-        }
-    }
-    
-    buyTokens (address(result));
+   address beneficiary =getAddressFromByte(b);
+    buyTokens (beneficiary);
     //buyTokens (msg.sender) ;
   }
   
@@ -164,24 +168,22 @@ contract Crowdsale is Ownable{
 
 
   // low level token purchase function
-  function buyTokens(address beneficiary) payable {
+  function buyTokens(address beneficiary) internal  {
           
-  //  require(beneficiary != 0x0);
-    require(validPurchase());
+     require(validAmountBlockAndEtherPurchase());
 
 
     uint256 weiAmount = msg.value;
-   // assert(weiAmount > 100);
-    // calculate token amount to be created 
    
-    uint256 tokens = (weiAmount) * (rate) ;
-    uint256 bonusTokens = tokens.mul(bonus());
-     bonusTokens = bonusTokens.div(100);
-    tokens = tokens.add(bonusTokens);
+   
+    uint256 tokens = (weiAmount) * (meshPerEther()) ;
+   // uint256 bonusTokens = tokens.mul(bonus());
+    // bonusTokens = bonusTokens.div(100);
+    //tokens = tokens.add(bonusTokens);
     
-     // minimum 0.0000000000000100 ether 
-     tokens = tokens.div(100);
-    weiRaised = weiRaised+(weiAmount);
+    
+     tokens = tokens.div(100); // conversion from 18 decimal to 16 decimal 
+    weiRaised = weiRaised.add(weiAmount);
     forwardFunds();
     token.mint(owner, beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
@@ -194,44 +196,43 @@ contract Crowdsale is Ownable{
   function forwardFunds() internal {
     wallet.transfer(msg.value);
   }
-  
-  
-function bonus() constant returns(uint256){
+    
+
+  function meshPerEther() constant returns(uint256){
     uint256 current = block.number;
     if(current < weekBlock[0])
-    return 30;
+	 return 15000;
     else if(current < weekBlock[1])
-    return 20;
+	return 10000;
     else if(current < weekBlock[2])
-    return 10;
+	return 7500;
     else 
-    return 0;
+	return 5000;
 }
+  
+
   // @return true if the transaction can buy tokens
-  function validPurchase() internal constant returns (bool) {
-    uint256 current = block.number;
-    bool withinPeriod = current >= startBlock && current <= endBlock;
+  function validAmountBlockAndEtherPurchase() internal constant returns (bool) {
+    
+    bool withinPeriod = validEtherCapAndBlockPurchase();
     bool nonZeroPurchase =  msg.value != 0 && msg.value > 100 ;
     return withinPeriod && nonZeroPurchase;
   }
-  
-    function validBankwirePurchase(uint256 amount) internal constant returns (bool) {
+ 
+  function validEtherCapAndBlockPurchase( ) internal constant returns (bool) {
     uint256 current = block.number;
     bool withinPeriod = current >= startBlock && current <= endBlock;
-    bool nonZeroPurchase =  amount > 0  ;
-    return withinPeriod && nonZeroPurchase;
+    
+    if(etherRaiseGoal > 0){
+     isEtherCapReached = etherRaiseGoal >  weiRaised;
+     return withinPeriod && isEtherCapReached;
+    }else{
+        return withinPeriod ;
+    }
   }
   
-  
-
-
-function contributeByBankWire(uint256 amount,bytes b){
-  
- 
-    require(validBankwirePurchase(amount));
-    
-    
-    uint result = 0;
+  function getAddressFromByte(bytes b) internal returns (address){
+ uint result = 0;
     for (uint i = 0; i < b.length; i++) {
         uint c = uint(b[i]);
         if (c >= 48 && c <= 57) {
@@ -245,22 +246,34 @@ function contributeByBankWire(uint256 amount,bytes b){
         }
     }
 
-   address beneficiary = address(result);
+   return address(result);
+
+  }
+
+
+function contributeByBankWire(uint256 amount,bytes b){
+  
+     require(  amount > 0);
+   
+    require(validEtherCapAndBlockPurchase());
+  
+    address beneficiary =getAddressFromByte(b);
+   
     
     amount = amount.mul(10000000000000000);
   
 
     bool exchangeDone = ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
-   if(!exchangeDone){
+    
+    if(!exchangeDone){
         revert();
       }
 
-   uint256 tokens = (amount).mul(10) ;
+    uint256 ethers = (amount).div(bankwirePerEther) ;
     
 
-    uint256 bonusVal = tokens.mul(bonus());
-    bonusVal = bonusVal.div(100);
-    tokens = tokens.add(bonusVal);
+    uint256 tokens = ethers.mul(meshPerEther());
+  
     
     ammbrBankwireRaised = ammbrBankwireRaised+amount;
 
@@ -271,5 +284,54 @@ function contributeByBankWire(uint256 amount,bytes b){
 
 }
 
+function  buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokentype) onlyOwner  returns(bool){
+          
+    require(beneficiary != 0x0);
+    require(validEtherCapAndBlockPurchase());
+    assert(satoshi > 0);
+    
+    uint256 rate ;
 
+    if(tokentype == 1){
+	    rate = etherPerBitcoin;
+	    bitcoinRaised.add(satoshi);
+   
+    }
+    else if(tokentype == 2){
+    	rate = etherPerBitcoinCash;
+    	bitcoinCashRaised.add(satoshi);
+    }
+    else
+	    return false;
+    
+    uint256 calEther = (satoshi).mul(rate) ;
+    calEther = calEther.div(100); // convert satoshis to ether(with 8 decimal place)
+    calEther = calEther.mul(10000000000); // convert ether to wei 18 decimal places
+    uint256 tokens = calEther.mul (meshPerEther()); //convert ether to mesh token
+    
+    tokens = tokens.div (100); //convert to 16 decimal place
+    //tokens = tokens.add(bonusTokens);
+    
+    //satoshiRaised = satoshiRaised.add(satoshi);
+    
+    token.mint(owner, beneficiary, tokens);
+    TokenPurchase(beneficiary, satoshi, tokens);
+
+    return true;
+  }
+
+
+
+  function  getBankwirePerEther() constant returns (uint256){
+    return bankwirePerEther;
+  }
+   function  getEtherPerBitcoin() constant returns (uint256){
+    return etherPerBitcoin;
+  }
+   function  getEtherPerBitcoinCash() constant returns (uint256){
+    return etherPerBitcoinCash;
+  }
+ function isCapReached() constant returns (bool ) {
+    return isEtherCapReached;
+  }
 }
