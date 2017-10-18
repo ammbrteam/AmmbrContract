@@ -63,38 +63,38 @@ contract Ownable {
 
 }
 
-contract PrivateCrowdsale is Ownable{
+contract PreCrowdsaleContract is Ownable{
     using SafeMath for uint256;
  
     // The token being sold
-     AbstractAmmbr public token;
-   
+  AbstractAmmbr public tokenAddress;
   
-
   // start and end block where investments are allowed (both inclusive)
   uint256 public startBlock;
   uint256 public endBlock;
-    uint256[] weekBlock;
+  
+ 
     
   // address where funds are collected
   address  wallet;
   
-    uint256 public etherRaiseGoal;
+  uint256  etherRaiseGoal;
   // Set base rate based on ether for bankwire, bitcoin and bitcoin cash
 
    uint256 public bankwirePerEther;
    uint256 public etherPerBitcoin;
    uint256 public etherPerBitcoinCash;
+   uint256 public decimalForBitcoin;
+   uint256 public decimalForBitcoinCash;
 
   AbstractBankwire  ammbr_bankwire;
     // amount of raised money in wei, bankwire, bitcoin and bitcoin cash
   uint256 public weiRaised;
-  uint256 public ammbrBankwireRaised ;
-  uint256 public bitcoinRaised;
-  uint256 public bitcoinCashRaised;
+  uint256 public bankwireRaised ;
+  uint256 public bitcoinSatoshisRaised;
+  uint256 public bitcoinCashSatoshisRaised;
   
-   bool isEtherCapReached;
-
+  bool isEtherCapReached ;
 
   /**
    * event for token purchase logging
@@ -116,12 +116,13 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
     etherRaiseGoal = amount.mul(1000000000000000000);
     isEtherCapReached = false;
 }
-  function PrivateCrowdsale(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet,/*uint256 tokenPerEther,*/ address ammbrBankwireAddress, uint256 _bankwirePerEther, uint256 _etherPerBitcoinCash, uint256 _etherPerBitcoin) {
+
+  function PreCrowdsaleContract(uint256 _startBlock, uint256 _endBlock, address ammbrAddress, address _wallet, address ammbrBankwireAddress, uint256 _bankwirePerEther, uint256 _etherPerBitcoinCash, uint256 _decimalForBitcoinCash, uint256 _etherPerBitcoin, uint256 _decimalForBitcoin) {
  
     require(_wallet != 0x0);
     require(ammbrAddress != 0x0);
 
-    token =  AbstractAmmbr(ammbrAddress);
+    tokenAddress =  AbstractAmmbr(ammbrAddress);
     
     ammbr_bankwire  = AbstractBankwire (ammbrBankwireAddress);
        
@@ -132,24 +133,11 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
     
     bankwirePerEther = _bankwirePerEther;
     etherPerBitcoinCash = _etherPerBitcoinCash;
+     decimalForBitcoinCash = _decimalForBitcoinCash;
+      decimalForBitcoin = _decimalForBitcoin;
     etherPerBitcoin = _etherPerBitcoin;
 
-    uint256 totalBlockMine = endBlock - startBlock + 1;
     
-    uint256 blockMined = _startBlock;
-  //  rate = tokenPerEther;
-    uint256 blockMineInWeek = totalBlockMine.div(4);
-    
-    for(uint count =0 ; count < 4 ; count++){
-        blockMined = blockMined + blockMineInWeek;
-        weekBlock.length = count+1;
-        weekBlock[count] = blockMined;
-    }
-    
-     uint256 blockleft  = totalBlockMine - blockMined;
- 
-     weekBlock[3] = weekBlock[3] + blockleft;
- 
   }
 
  
@@ -159,7 +147,7 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
    bytes memory  b = msg.data;
    address beneficiary =getAddressFromByte(b);
     buyTokens (beneficiary);
-    //buyTokens (msg.sender) ;
+  
   }
   
 
@@ -176,16 +164,12 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
     uint256 weiAmount = msg.value;
    
    
-    uint256 tokens = (weiAmount) * (meshPerEther()) ;
-   // uint256 bonusTokens = tokens.mul(bonus());
-    // bonusTokens = bonusTokens.div(100);
-    //tokens = tokens.add(bonusTokens);
-    
-    
-     tokens = tokens.div(100); // conversion from 18 decimal to 16 decimal 
+    uint256 tokens = (weiAmount) * (tokensPerEther()) ;
+    tokens = tokens.div(100); // conversion from 18 decimal to 16 decimal 
+  
     weiRaised = weiRaised.add(weiAmount);
     forwardFunds();
-    token.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(owner, beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
 
     
@@ -198,16 +182,8 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
   }
     
 
-  function meshPerEther() constant returns(uint256){
-    uint256 current = block.number;
-    if(current < weekBlock[0])
-	 return 15000;
-    else if(current < weekBlock[1])
-	return 10000;
-    else if(current < weekBlock[2])
-	return 7500;
-    else 
-	return 5000;
+  function tokensPerEther() public constant returns(uint256){
+	return  5000;
 }
   
 
@@ -224,7 +200,7 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
     bool withinPeriod = current >= startBlock && current <= endBlock;
     
     if(etherRaiseGoal > 0){
-     isEtherCapReached = etherRaiseGoal >  weiRaised;
+      isEtherCapReached = etherRaiseGoal >  weiRaised;
      return withinPeriod && isEtherCapReached;
     }else{
         return withinPeriod ;
@@ -251,13 +227,13 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
   }
 
 
-function contributeByBankWire(uint256 amount,bytes b){
+function contributeByBankWire(uint256 amount,bytes transactionData){
   
      require(  amount > 0);
    
     require(validEtherCapAndBlockPurchase());
   
-    address beneficiary =getAddressFromByte(b);
+    address beneficiary =getAddressFromByte(transactionData);
    
     
     amount = amount.mul(10000000000000000);
@@ -272,66 +248,67 @@ function contributeByBankWire(uint256 amount,bytes b){
     uint256 ethers = (amount).div(bankwirePerEther) ;
     
 
-    uint256 tokens = ethers.mul(meshPerEther());
+    uint256 tokens = ethers.mul(tokensPerEther());
   
     
-    ammbrBankwireRaised = ammbrBankwireRaised+amount;
+    bankwireRaised = bankwireRaised.add(amount);
 
-    token.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(owner, beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
 
 
 }
 
-function  buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokentype) onlyOwner  returns(bool){
+function buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokentype) onlyOwner  returns(bool){
           
     require(beneficiary != 0x0);
     require(validEtherCapAndBlockPurchase());
     assert(satoshi > 0);
     
     uint256 rate ;
-
+    uint256 decimal;
     if(tokentype == 1){
 	    rate = etherPerBitcoin;
-	    bitcoinRaised.add(satoshi);
+	    bitcoinSatoshisRaised.add(satoshi);
+	    decimal = decimalForBitcoin;
    
     }
     else if(tokentype == 2){
     	rate = etherPerBitcoinCash;
-    	bitcoinCashRaised.add(satoshi);
+    	bitcoinCashSatoshisRaised.add(satoshi);
+    	decimal = decimalForBitcoinCash;
     }
     else
 	    return false;
     
-    uint256 calEther = (satoshi).mul(rate) ;
-    calEther = calEther.div(100); // convert satoshis to ether(with 8 decimal place)
+    uint256 calEther = (satoshi).mul(rate) ; // convert satoshis to ether(with 8 decimal place)
+    calEther = calEther.div(decimal);
     calEther = calEther.mul(10000000000); // convert ether to wei 18 decimal places
-    uint256 tokens = calEther.mul (meshPerEther()); //convert ether to mesh token
+    
+    uint256 tokens = calEther.mul (tokensPerEther()); //convert ether to mesh token
     
     tokens = tokens.div (100); //convert to 16 decimal place
-    //tokens = tokens.add(bonusTokens);
+   
     
-    //satoshiRaised = satoshiRaised.add(satoshi);
-    
-    token.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(owner, beneficiary, tokens);
     TokenPurchase(beneficiary, satoshi, tokens);
 
     return true;
   }
+  
+ 
+  
+   
+ 
 
-
-
-  function  getBankwirePerEther() constant returns (uint256){
-    return bankwirePerEther;
-  }
-   function  getEtherPerBitcoin() constant returns (uint256){
-    return etherPerBitcoin;
-  }
-   function  getEtherPerBitcoinCash() constant returns (uint256){
-    return etherPerBitcoinCash;
-  }
- function isCapReached() constant returns (bool ) {
+ function isCapReached() public constant returns (bool ) {
     return isEtherCapReached;
   }
+  
+  function kill() onlyOwner{
+      
+       suicide(wallet);
+    }
+ 
 }
