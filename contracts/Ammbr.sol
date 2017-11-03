@@ -170,11 +170,13 @@ contract  Ammbr is StandardToken, Ownable {
    string public symbol = '';
    uint8 public  decimals =0;
    
+   address public contractAddress;
    
-     
+   uint256 public maxMintBlock;  
   event Mint(address indexed to, uint256 amount);
   event MintFinished();
   event MintStart();
+  event SetAddress(address _contractAddress);
 
   bool public mintingFinished = false;
 
@@ -184,19 +186,38 @@ contract  Ammbr is StandardToken, Ownable {
     _;
   }
 
+
+modifier contractAndOwnerAccess(){
+     require(msg.sender == owner || msg.sender == contractAddress);
+    _;
+}
+
+    function setContractAddress(address _contractAddress) onlyOwner{
+        contractAddress =_contractAddress;
+        SetAddress(contractAddress);
+    }
+    
+
   /**
    * @dev Function to mint tokens
    * @param _to The address that will recieve the minted tokens.
    * @param _amount The amount of tokens to mint.
    * @return A boolean that indicates if the operation was successful.
    */
-  function mint(address _owner, address _to, uint256 _amount) canMint returns (bool) {
-    if(owner == _owner){
+  function mint(address _to, uint256 _amount) contractAndOwnerAccess canMint returns (bool) {
+    
+    if( maxMintBlock < block.number){
+        
+        mintingFinished = true;
+        MintFinished();
+        return false;
+    }
+    
       totalSupply = totalSupply.add(_amount);
       balances[_to] = balances[_to].add(_amount);
       Mint(_to, _amount);
       return true;
-    }
+   
     
   }
 
@@ -219,12 +240,12 @@ contract  Ammbr is StandardToken, Ownable {
 
 
 
-function Ammbr( string _name, string _symbol, uint8 _decimals){
+function Ammbr( string _name, string _symbol, uint8 _decimals, uint256 _maxMintBlock){
 
    name = _name;
    symbol = _symbol;
    decimals = _decimals;    
-  
+  maxMintBlock=_maxMintBlock;
 }
 
   }

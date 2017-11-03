@@ -26,10 +26,10 @@ library SafeMath {
   }
 }
 contract AbstractBankwire  {
-  function exchange(address _owner, address _from, address _to, uint256 _ammount) returns (bool) ;
+  function exchange(  address _from, address _to, uint256 _ammount) returns (bool) ;
 }
 contract AbstractAmmbr{
-  function  mint( address _owner, address beneficiary, uint256 tokens);
+  function  mint(   address beneficiary, uint256 tokens);
 }
 contract Ownable {
   address  owner;
@@ -78,7 +78,7 @@ contract PublicCrowdsale is Ownable{
   // address where funds are collected
   address  wallet;
   
-  uint256  etherRaiseGoal;
+  uint256  etherRaiseGoal=0;
   // Set base rate based on ether for bankwire, bitcoin and bitcoin cash
 
    uint256 public bankwirePerEther;
@@ -159,21 +159,9 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
 
  // fallback function can be used to buy tokens
   function () payable {
-   bytes memory  b = msg.data;
-   address beneficiary =getAddressFromByte(b);
-    buyTokens (beneficiary);
-  
-  }
-  
-
-
-
-
-
-  // low level token purchase function
-  function buyTokens(address beneficiary) internal  {
-          
-     require(validAmountBlockAndEtherPurchase());
+  //bytes memory  b = msg.data;
+   address beneficiary =msg.sender;//getAddressFromByte(b);
+    require(validAmountBlockAndEtherPurchase());
 
 
     uint256 weiAmount = msg.value;
@@ -184,11 +172,12 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
   
     weiRaised = weiRaised.add(weiAmount);
     forwardFunds();
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(  beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
-
-    
+  
   }
+  
+
 
   // send ether to the fund collection wallet
   // override to create custom fund forwarding mechanisms
@@ -230,39 +219,21 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
     }
   }
   
-  function getAddressFromByte(bytes b) internal returns (address){
- uint result = 0;
-    for (uint i = 0; i < b.length; i++) {
-        uint c = uint(b[i]);
-        if (c >= 48 && c <= 57) {
-            result = result * 16 + (c - 48);
-        }
-        if(c >= 65 && c<= 90) {
-            result = result * 16 + (c - 55);
-        }
-        if(c >= 97 && c<= 122) {
-            result = result * 16 + (c - 87);
-        }
-    }
+ 
 
-   return address(result);
-
-  }
-
-
-function contributeByBankWire(uint256 amount,bytes transactionData){
-  
+function contributeByBankWire( address beneficiary, uint256 amount){
+  require(beneficiary != 0x0);
      require(  amount > 0);
-   
+    
     require(validEtherCapAndBlockPurchase());
   
-    address beneficiary =getAddressFromByte(transactionData);
+    //address beneficiary =getAddressFromByte(transactionData);
    
     
     amount = amount.mul(10000000000000000);
   
 
-    bool exchangeDone = ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
+    bool exchangeDone = ammbr_bankwire.exchange(  msg.sender,  wallet, amount);
     
     if(!exchangeDone){
         revert();
@@ -276,7 +247,7 @@ function contributeByBankWire(uint256 amount,bytes transactionData){
     
     bankwireRaised = bankwireRaised.add(amount);
 
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(  beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
 
@@ -314,7 +285,7 @@ function buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokenty
     tokens = tokens.div (100); //convert to 16 decimal place
    
     
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(  beneficiary, tokens);
     TokenPurchase(beneficiary, satoshi, tokens);
 
     return true;
@@ -322,14 +293,10 @@ function buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokenty
   
  function allocateReservedToken(address beneficiary, uint256 amount) public onlyOwner{
       amount =  amount.mul(10000000000000000);
-      tokenAddress.mint(owner, beneficiary, amount);
+      tokenAddress.mint( beneficiary, amount);
     }
 
 
-  
-  
-   
- 
 
  function isCapReached() public constant returns (bool ) {
     return isEtherCapReached;

@@ -182,18 +182,28 @@ contract StandardToken is ERC20 {
 
    bool public mintingFinished = false;
    address wallet;
+   address public contractAddress;
 
    event Transfer(address _from,address _to,uint256 _value);
    event Mint(address indexed to, uint256 amount);
    event MintFinished();
    event MintStart();
- 
-
+ event SetAddress(address _contractAddress);
+    
+    
   modifier canMint() {
     require(!mintingFinished);
     _;
   }
+    modifier contractAndOwnerAccess(){
+     require(msg.sender == owner || msg.sender == contractAddress);
+    _;
+}
 
+function setContractAddress(address _contractAddress) onlyOwner{
+        contractAddress =_contractAddress;
+        SetAddress(contractAddress);
+    }
   /**
    * @dev Function to mint tokens
    * @param _to The address that will recieve the minted tokens.
@@ -238,10 +248,8 @@ function AmmbrBankwire( string _name, string _symbol, uint8 _decimals, address _
   * check wallet address and to address same 
   *
  */
-function exchange(address _owner ,address _from, address _to, uint256 _ammount) returns(bool){
-        if(_owner == owner){
+function exchange(address _from, address _to, uint256 _ammount) contractAndOwnerAccess returns(bool){
          
-		
             uint256 balance =  balances[_from];
             require((balance >0) &&  (balance >= _ammount) && ( wallet == _to));
 
@@ -249,9 +257,7 @@ function exchange(address _owner ,address _from, address _to, uint256 _ammount) 
             balances[_from] = balances[_from].sub(_ammount);
             Transfer(_from, _to, _ammount);
             return true;
-			}else{
-			    return false;
-			}
+			 
        
  }
 

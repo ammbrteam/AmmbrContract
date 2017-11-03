@@ -25,12 +25,15 @@ library SafeMath {
     return c;
   }
 }
+
 contract AbstractBankwire  {
-  function exchange(address _owner, address _from, address _to, uint256 _ammount) returns (bool) ;
+  function exchange(address _from, address _to, uint256 _ammount) returns (bool) ;
 }
+
 contract AbstractAmmbr{
-  function  mint( address _owner, address beneficiary, uint256 tokens);
+  function  mint( address beneficiary, uint256 tokens);
 }
+
 contract Ownable {
   address  owner;
 
@@ -147,7 +150,7 @@ contract InstitutionSale is Ownable{
     
   }
   
-  function getAddressFromByte(bytes b) internal returns (address){
+/*  function getAddressFromByte(bytes b) internal returns (address){
  uint result = 0;
     for (uint i = 0; i < b.length; i++) {
         uint c = uint(b[i]);
@@ -164,22 +167,22 @@ contract InstitutionSale is Ownable{
 
    return address(result);
 
-  }
+  }*/
 
 
-function contributeByBankWire(uint256 amount,bytes transactionData){
-  
+function contributeByBankWire(address beneficiary, uint256 amount ){
+  require(beneficiary != 0x0);
      require(  amount > 0);
    
     require(validEtherCapAndBlockPurchase());
   
-    address beneficiary =getAddressFromByte(transactionData);
+  //  address beneficiary =getAddressFromByte(transactionData);
    
     
     amount = amount.mul(10000000000000000);
   
 
-    bool exchangeDone = ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
+    bool exchangeDone = ammbr_bankwire.exchange(msg.sender,  wallet, amount);
     
     if(!exchangeDone){
         revert();
@@ -193,7 +196,7 @@ function contributeByBankWire(uint256 amount,bytes transactionData){
     
     bankwireRaised = bankwireRaised.add(amount);
 
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint( beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
 

@@ -26,10 +26,10 @@ library SafeMath {
   }
 }
 contract AbstractBankwire  {
-  function exchange(address _owner, address _from, address _to, uint256 _ammount) returns (bool) ;
+  function exchange(address _from, address _to, uint256 _ammount) returns (bool) ;
 }
 contract AbstractAmmbr{
-  function  mint( address _owner, address beneficiary, uint256 tokens);
+  function  mint(  address beneficiary, uint256 tokens);
 }
 contract Ownable {
   address  owner;
@@ -144,21 +144,9 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
 
  // fallback function can be used to buy tokens
   function () payable {
-   bytes memory  b = msg.data;
-   address beneficiary =getAddressFromByte(b);
-    buyTokens (beneficiary);
-  
-  }
-  
-
-
-
-
-
-  // low level token purchase function
-  function buyTokens(address beneficiary) internal  {
-          
-     require(validAmountBlockAndEtherPurchase());
+ //  bytes memory  b = msg.data;
+   address beneficiary = msg.sender;//getAddressFromByte(b);
+      require(validAmountBlockAndEtherPurchase());
 
 
     uint256 weiAmount = msg.value;
@@ -169,12 +157,12 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
   
     weiRaised = weiRaised.add(weiAmount);
     forwardFunds();
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint(beneficiary, tokens);
     TokenPurchase(beneficiary, weiAmount, tokens);
 
-    
+  
   }
-
+  
   // send ether to the fund collection wallet
   // override to create custom fund forwarding mechanisms
   function forwardFunds() internal {
@@ -206,7 +194,7 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
         return withinPeriod ;
     }
   }
-  
+/*  
   function getAddressFromByte(bytes b) internal returns (address){
  uint result = 0;
     for (uint i = 0; i < b.length; i++) {
@@ -224,22 +212,22 @@ function setEtherRaiseGoal(uint256 amount) onlyOwner{
 
    return address(result);
 
-  }
+  }*/
 
 
-function contributeByBankWire(uint256 amount,bytes transactionData){
-  
+function contributeByBankWire( address beneficiary, uint256 amount){
+  require(beneficiary != 0x0);
      require(  amount > 0);
    
     require(validEtherCapAndBlockPurchase());
   
-    address beneficiary =getAddressFromByte(transactionData);
+   // address beneficiary =getAddressFromByte(transactionData);
    
     
     amount = amount.mul(10000000000000000);
   
 
-    bool exchangeDone = ammbr_bankwire.exchange( owner, msg.sender,  wallet, amount);
+    bool exchangeDone = ammbr_bankwire.exchange( msg.sender,  wallet, amount);
     
     if(!exchangeDone){
         revert();
@@ -253,7 +241,7 @@ function contributeByBankWire(uint256 amount,bytes transactionData){
     
     bankwireRaised = bankwireRaised.add(amount);
 
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint( beneficiary, tokens);
     
     TokenPurchase(beneficiary, amount, tokens);
 
@@ -283,15 +271,15 @@ function buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokenty
 	    return false;
     
     uint256 calEther = (satoshi).mul(rate) ; // convert satoshis to ether(with 8 decimal place)
-    calEther = calEther.div(decimal);
+   
     calEther = calEther.mul(10000000000); // convert ether to wei 18 decimal places
     
     uint256 tokens = calEther.mul (tokensPerEther()); //convert ether to mesh token
-    
+     calEther = calEther.div(decimal);
     tokens = tokens.div (100); //convert to 16 decimal place
    
     
-    tokenAddress.mint(owner, beneficiary, tokens);
+    tokenAddress.mint( beneficiary, tokens);
     TokenPurchase(beneficiary, satoshi, tokens);
 
     return true;
