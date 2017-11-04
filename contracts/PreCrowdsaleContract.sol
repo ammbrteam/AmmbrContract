@@ -273,9 +273,9 @@ function buyTokensPerBitcoin(address beneficiary, uint256 satoshi, uint8 tokenty
     uint256 calEther = (satoshi).mul(rate) ; // convert satoshis to ether(with 8 decimal place)
    
     calEther = calEther.mul(10000000000); // convert ether to wei 18 decimal places
-    
+     calEther = calEther.div(decimal);    
     uint256 tokens = calEther.mul (tokensPerEther()); //convert ether to mesh token
-     calEther = calEther.div(decimal);
+
     tokens = tokens.div (100); //convert to 16 decimal place
    
     

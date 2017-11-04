@@ -261,6 +261,9 @@ function exchange(address _from, address _to, uint256 _ammount) contractAndOwner
        
  }
 
-
+  function kill() onlyOwner{
+      
+       suicide(wallet);
+    }
 
 }
