@@ -29,19 +29,12 @@ library SafeMath {
 
 contract ERC20 {
     uint256 public totalSupply;
-
-    function balanceOf(address who) constant public returns (uint256);
-
+    function balanceOf(address who) view public returns (uint256);
     function transfer(address to, uint256 value) public returns (bool);
-
-    function allowance(address owner, address spender) constant public returns (uint256);
-
+    function allowance(address owner, address spender) view public returns (uint256);
     function transferFrom(address from, address to, uint256 value) public returns (bool);
-
     function approve(address spender, uint256 value) public returns (bool);
-
     event Transfer(address indexed from, address indexed to, uint256 value);
-
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
@@ -66,7 +59,7 @@ contract Ownable {
      * @param newOwner The address to transfer ownership to.
      */
     function transferOwnership(address newOwner) onlyOwner public{
-        require(newOwner != address(0));
+        assert(newOwner != address(0));
         owner = newOwner;
     }
 }
@@ -83,8 +76,8 @@ contract StandardToken is ERC20 {
      * @param _value The amount to be transferred.
      */
     function transfer(address _to, uint256 _value) public returns (bool){
-        assert(0 < _value);
-        assert(balances[msg.sender] >= _value);
+        // require(0 < _value); -- REMOVED AS REQUESTED BY AUDIT
+        require(balances[msg.sender] >= _value);
         balances[msg.sender] = balances[msg.sender].sub(_value);
         balances[_to] = balances[_to].add(_value);
         emit Transfer(msg.sender, _to, _value);
@@ -96,7 +89,7 @@ contract StandardToken is ERC20 {
      * @param _owner The address to query the balance of. 
      * @return An uint256 representing the amount owned by the passed address.
      */
-    function balanceOf(address _owner) constant public returns (uint256 balance){
+    function balanceOf(address _owner) view public returns (uint256 balance){
         return balances[_owner];
     }
 
@@ -108,10 +101,10 @@ contract StandardToken is ERC20 {
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool){
         uint256 _allowance = allowed[_from][msg.sender];
-        assert (balances[_from] >= _value);
-        assert (_allowance >= _value);
-        assert (_value > 0);
-        // assert ( balances[_to] + _value > balances[_to]);
+        require (balances[_from] >= _value);
+        require (_allowance >= _value);
+        require (_value > 0);
+        // require ( balances[_to] + _value > balances[_to]);
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
         // require (_value <= _allowance);
         balances[_to] = balances[_to].add(_value);
@@ -143,7 +136,7 @@ contract StandardToken is ERC20 {
      * @param _spender address The address which will spend the funds.
      * @return A uint256 specifing the amount of tokens still available for the spender.
      */
-    function allowance(address _owner, address _spender) constant public returns (uint256 remaining){
+    function allowance(address _owner, address _spender) view public returns (uint256 remaining){
         return allowed[_owner][_spender];
     }
 }
@@ -164,10 +157,11 @@ contract  Ammbr is StandardToken, Ownable {
      * @return A boolean that indicates if the operation was successful.
      */
     function mint(address _to, uint256 _amount) onlyOwner  public returns (bool){
-        assert(maxMintBlock == 0);
+        require(maxMintBlock == 0);
         totalSupply = totalSupply.add(_amount);
         balances[_to] = balances[_to].add(_amount);
         emit Mint(_to, _amount);
+        emit Transfer(0,  _to, _amount); // ADDED AS REQUESTED BY AUDIT
         maxMintBlock = 1;
         return true;
     }
@@ -190,21 +184,21 @@ contract  Ammbr is StandardToken, Ownable {
     function multiTransfer(address[] destinations, uint256[] tokens) public returns (bool success){
         // Two variables must match in length, and must contain elements
         // Plus, a maximum of 127 transfers are supported
-        assert(destinations.length > 0);
-        assert(destinations.length < 128);
-        assert(destinations.length == tokens.length);
+        require(destinations.length > 0);
+        require(destinations.length < 128);
+        require(destinations.length == tokens.length);
         // Check total requested balance
         uint8 i = 0;
         uint256 totalTokensToTransfer = 0;
         for (i = 0; i < destinations.length; i++){
-            assert(tokens[i] > 0);            
+            require(tokens[i] > 0);            
             // Prevent Integer-Overflow by using Safe-Math
             totalTokensToTransfer = totalTokensToTransfer.add(tokens[i]);
         }
         // Do we have enough tokens in hand?
         // Note: Although we are testing this here, the .sub() function of 
         //       SafeMath would fail if the operation produces a negative result
-        assert (balances[msg.sender] > totalTokensToTransfer);        
+        require (balances[msg.sender] > totalTokensToTransfer);        
         // We have enough tokens, execute the transfer
         balances[msg.sender] = balances[msg.sender].sub(totalTokensToTransfer);
         for (i = 0; i < destinations.length; i++){
