@@ -103,7 +103,7 @@ contract StandardToken is ERC20 {
         uint256 _allowance = allowed[_from][msg.sender];
         require (balances[_from] >= _value);
         require (_allowance >= _value);
-        require (_value > 0);
+        // require (_value > 0); // NOTE: Removed due to audit demand (transfer of 0 should be authorized)
         // require ( balances[_to] + _value > balances[_to]);
         // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
         // require (_value <= _allowance);
